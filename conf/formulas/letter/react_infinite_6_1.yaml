@@ -1,0 +1,5 @@
+- "GF(j) & G(j => F(b)) & G(b => F(g)) & G(g => F(l)) & G(l => F(i)) & G(i => F(h)) & G(h => F(a))"
+- "GF(f) & G(f => F(a)) & G(a => F(i)) & G(i => F(h)) & G(h => F(e)) & G(e => F(l)) & G(l => F(c))"
+- "GF(g) & G(g => F(e)) & G(e => F(k)) & G(k => F(d)) & G(d => F(j)) & G(j => F(f)) & G(f => F(h))"
+- "GF(i) & G(i => F(h)) & G(h => F(k)) & G(k => F(e)) & G(e => F(g)) & G(g => F(f)) & G(f => F(j))"
+- "GF(f) & G(f => F(e)) & G(e => F(j)) & G(j => F(c)) & G(c => F(g)) & G(g => F(i)) & G(i => F(l))"

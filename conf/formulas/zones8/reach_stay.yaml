@@ -1,0 +1,13 @@
+# - "FG red | FG purple"
+# - "FG red & F (orange & F green)"
+# - "FG green & G !orange"
+# - "G ((green | orange) => F red) & FG (green | purple)"
+
+# - "F ........... & FG red | "
+
+# Complex patrol mit local safety
+- "FG(red) & (F brown) & (F pink) & (F blue) & (F purple) & (F gray)"
+- "FG(orange) & (F blue) & (F purple) & (F pink) & (F green) & (F brown)"
+- "FG(orange) & (F gray) & (F pink) & (F blue) & (F brown) & (F green)"
+- "FG(red) & (F green) & (F blue) & (F gray) & (F brown) & (F orange)"
+- "FG(blue) & (F green) & (F red) & (F purple) & (F orange) & (F pink)"

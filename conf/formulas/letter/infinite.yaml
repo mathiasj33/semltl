@@ -1,0 +1,2 @@
+- "GF (a & F b) | GF (c & F d) & GF (e & F f)"
+- "GF a & GF b & GF c & GF d & G (!e & !f)"

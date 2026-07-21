@@ -1,0 +1,10 @@
+defaults:
+  - experiment: semltl/zones8
+  - hydra: simple
+  - _self_
+  - optional local: local
+
+env:
+  use_precomputed_resets: false
+policy: "teleop" # "teleop" or "random"
+print_debug: true

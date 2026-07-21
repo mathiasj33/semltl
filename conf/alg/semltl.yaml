@@ -1,0 +1,10 @@
+name: semltl
+
+wrap_env:
+  _target_: jaxltl.semltl.wrappers.utils.wrap_env
+
+agent:
+  _target_: jaxltl.semltl.eval.agent.SemLTLAgent.instantiate
+
+preprocess_formulas:
+  _target_: jaxltl.semltl.utils.preprocessing.preprocess_formulas

@@ -1,0 +1,5 @@
+- "(((!h U ((f) & (!h U ((a) & (!h U ((k) & true))))))) | ((!h U ((k) & (!h U ((e) & (!h U ((b) & true))))))) | ((!h U ((c) & (!h U ((l) & (!h U ((a) & true))))))))"
+- "(((!b U ((a) & (!b U ((h) & (!b U ((c) & true))))))) | ((!b U ((e) & (!b U ((d) & (!b U ((e) & true))))))) | ((!b U ((f) & (!b U ((g) & (!b U ((d) & true))))))))"
+- "(((!j U ((g) & (!j U ((c) & (!j U ((e) & true))))))) | ((!j U ((c) & (!j U ((l) & (!j U ((a) & true))))))) | ((!j U ((d) & (!j U ((c) & (!j U ((i) & true))))))))"
+- "(((!h U ((j) & (!h U ((c) & (!h U ((d) & true))))))) | ((!h U ((i) & (!h U ((a) & (!h U ((j) & true))))))) | ((!h U ((a) & (!h U ((k) & (!h U ((g) & true))))))))"
+- "(((!a U ((g) & (!a U ((f) & (!a U ((i) & true))))))) | ((!a U ((k) & (!a U ((h) & (!a U ((l) & true))))))) | ((!a U ((j) & (!a U ((i) & (!a U ((h) & true))))))))"

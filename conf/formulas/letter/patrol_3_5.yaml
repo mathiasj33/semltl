@@ -1,0 +1,5 @@
+- "G F (g & (F (b & (F c)))) & G (!l) & G (!f) | G F (k & (F (f & (F e)))) & G (!i) & G (!j) | G F (h & (F (k & (F l)))) & G (!i) & G (!f) | G F (c & (F (f & (F k)))) & G (!e) & G (!j) | G F (a & (F (b & (F k)))) & G (!h) & G (!g)"
+- "G F (c & (F (f & (F g)))) & G (!b) & G (!h) | G F (j & (F (d & (F b)))) & G (!c) & G (!i) | G F (k & (F (c & (F b)))) & G (!a) & G (!g) | G F (g & (F (b & (F j)))) & G (!c) & G (!a) | G F (c & (F (e & (F g)))) & G (!i) & G (!j)"
+- "G F (g & (F (a & (F c)))) & G (!k) & G (!j) | G F (j & (F (d & (F c)))) & G (!l) & G (!k) | G F (i & (F (l & (F c)))) & G (!g) & G (!d) | G F (a & (F (j & (F d)))) & G (!c) & G (!k) | G F (e & (F (a & (F k)))) & G (!l) & G (!d)"
+- "G F (d & (F (h & (F b)))) & G (!l) & G (!j) | G F (b & (F (j & (F i)))) & G (!h) & G (!l) | G F (b & (F (j & (F c)))) & G (!k) & G (!a) | G F (d & (F (l & (F i)))) & G (!h) & G (!f) | G F (i & (F (l & (F g)))) & G (!a) & G (!c)"
+- "G F (k & (F (i & (F g)))) & G (!l) & G (!f) | G F (a & (F (i & (F b)))) & G (!l) & G (!c) | G F (f & (F (l & (F k)))) & G (!h) & G (!d) | G F (e & (F (f & (F l)))) & G (!k) & G (!c) | G F (h & (F (j & (F e)))) & G (!d) & G (!f)"

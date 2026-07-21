@@ -1,0 +1,5 @@
+- "GF(purple) & G(purple => F(pink)) & G(pink => F(gray)) & G(gray => F(blue)) & G(blue => F(red)) & G(red => F(green)) & G(green => F(orange))"
+- "GF(red) & G(red => F(brown)) & G(brown => F(green)) & G(green => F(orange)) & G(orange => F(gray)) & G(gray => F(pink)) & G(pink => F(purple))"
+- "GF(pink) & G(pink => F(blue)) & G(blue => F(orange)) & G(orange => F(green)) & G(green => F(red)) & G(red => F(purple)) & G(purple => F(gray))"
+- "GF(brown) & G(brown => F(green)) & G(green => F(purple)) & G(purple => F(pink)) & G(pink => F(orange)) & G(orange => F(gray)) & G(gray => F(red))"
+- "GF(pink) & G(pink => F(gray)) & G(gray => F(red)) & G(red => F(purple)) & G(purple => F(orange)) & G(orange => F(green)) & G(green => F(brown))"

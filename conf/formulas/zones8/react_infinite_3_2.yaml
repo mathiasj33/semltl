@@ -1,0 +1,5 @@
+- "GF(brown) & G(brown => F(red | blue)) & G(red => F(green | pink)) & G(blue => F(gray | orange))"
+- "GF(gray) & G(gray => F(orange | blue)) & G(orange => F(brown | red)) & G(blue => F(purple | green))"
+- "GF(gray) & G(gray => F(pink | green)) & G(pink => F(blue | red)) & G(green => F(brown | orange))"
+- "GF(blue) & G(blue => F(pink | brown)) & G(pink => F(red | gray)) & G(brown => F(purple | green))"
+- "GF(gray) & G(gray => F(blue | red)) & G(blue => F(green | brown)) & G(red => F(orange | pink))"

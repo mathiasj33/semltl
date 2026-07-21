@@ -1,0 +1,10 @@
+defaults:
+  - experiment: semltl/zones8
+  - hydra: training_run
+  - _self_
+  - optional local: local
+
+run: tmp
+num_seeds: 5
+use_gpu: true # use gpu if available
+save_freq: 2e5

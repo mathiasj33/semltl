@@ -1,0 +1,54 @@
+# @package __global__
+
+defaults:
+  - /env: zone_env8
+  - /alg: semltl
+  - /rl_alg: ppo
+
+curriculum:
+  _target_: jaxltl.semltl.curriculum.zone_env_curriculum.make
+
+curriculum_wrapper:
+  episode_window: 128
+
+model:
+  _target_: jaxltl.semltl.model.semltl.SemLTLModel
+  _recursive_: false
+  env_net:
+    _target_: jaxltl.networks.rgb_lidar_conv_net.RGBLidarConvNet
+    channels: [16, 32]
+    kernel_size: 5
+    proprio_hidden_sizes: []
+    proprio_out_size: 32
+    fusion_hidden_sizes: []
+    fusion_out_size: 64
+    activation: ${act:relu}
+  actor:
+    _target_: jaxltl.semltl.model.actor.multi_eps_continuous_actor.MultiEpsilonContinuousActor
+    hidden_sizes: [64, 64, 64]
+    hidden_activation: ${act:relu}
+    output_activation: ${act:tanh}
+    state_dependent_std: true
+  critic:
+    _target_: jaxltl.networks.mlp.MLP
+    hidden_sizes: [64, 64]
+    activation: ${act:tanh}
+  embedding_dim: 32
+  semantic:
+    embedding_size: 386
+
+rl_alg:
+  total_timesteps: 3e8
+  num_envs: 128
+  num_steps: 1024
+  num_minibatches: 4
+  update_epochs: 5
+  gamma: 0.998
+  gae_lambda: 0.95
+  clip_eps: 0.2
+  ent_coef: 0.003
+  vf_coef: 0.5
+  lr: 5e-4
+  max_grad_norm: 1.0
+  anneal_lr: false
+  adam_eps: 1e-8

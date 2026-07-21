@@ -1,0 +1,5 @@
+- "((k => F(l | d)) & (g => F(j | e)) & (d => F(b | a)) & (e => F(g | a)) & (k => F(d | g)) & (j => F(l | e)) & (d => F(l | a)) & (a => F(c | b)) & (c => F(g | e)) & (e => F(d | g))) U (i)"
+- "((h => F(i | b)) & (e => F(g | i)) & (j => F(d | f)) & (g => F(e | k)) & (a => F(g | h)) & (d => F(a | i)) & (h => F(b | g)) & (g => F(k | d)) & (d => F(g | j)) & (b => F(i | d))) U (c)"
+- "((f => F(b | d)) & (a => F(f | b)) & (a => F(k | f)) & (j => F(g | a)) & (e => F(f | k)) & (d => F(a | e)) & (c => F(i | k)) & (j => F(f | b)) & (c => F(h | g)) & (f => F(a | h))) U (l)"
+- "((f => F(d | c)) & (j => F(k | h)) & (j => F(l | e)) & (c => F(i | k)) & (k => F(d | f)) & (f => F(d | a)) & (a => F(f | c)) & (i => F(h | d)) & (d => F(k | h)) & (l => F(k | j))) U (g)"
+- "((b => F(j | f)) & (f => F(d | l)) & (g => F(l | e)) & (e => F(h | f)) & (i => F(f | e)) & (l => F(k | e)) & (g => F(h | a)) & (a => F(b | j)) & (a => F(d | j)) & (g => F(j | i))) U (c)"

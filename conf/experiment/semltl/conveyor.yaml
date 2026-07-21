@@ -1,0 +1,48 @@
+# @package __global__
+
+defaults:
+  - /env: conveyor_world
+  - /alg: semltl
+  - /rl_alg: ppo
+
+curriculum:
+  _target_: jaxltl.semltl.curriculum.conveyor_world_curriculum.make
+
+curriculum_wrapper:
+  episode_window: 256
+
+model:
+  _target_: jaxltl.semltl.model.semltl.SemLTLModel
+  _recursive_: false
+  env_net:
+    _target_: jaxltl.networks.mlp.MLP
+    hidden_sizes: []
+    out_size: 4
+    activation: ${act:tanh}
+  actor:
+    _target_: jaxltl.semltl.model.actor.multi_eps_discrete_actor.MultiEpsilonDiscreteActor
+    hidden_sizes: [32]
+    activation: ${act:relu}
+  critic:
+    _target_: jaxltl.networks.mlp.MLP
+    hidden_sizes: [32]
+    activation: ${act:tanh}
+  embedding_dim: 16
+  semantic:
+    embedding_size: 96
+
+rl_alg:
+  total_timesteps: 1e6
+  num_envs: 256
+  num_steps: 64
+  num_minibatches: 4
+  update_epochs: 8
+  gamma: 0.9
+  gae_lambda: 0.95
+  clip_eps: 0.2
+  ent_coef: 0.02
+  vf_coef: 0.5
+  lr: 3e-4
+  max_grad_norm: 0.5
+  anneal_lr: false
+  adam_eps: 1e-8

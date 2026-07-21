@@ -1,0 +1,5 @@
+- "((purple => F(green | orange | pink)) & (red => F(green | gray | purple)) & (purple => F(green | pink | red)) & (orange => F(purple | pink | green)) & (orange => F(red | pink | purple))) U (blue)"
+- "((red => F(orange | blue | gray)) & (pink => F(orange | blue | gray)) & (gray => F(green | orange | red)) & (gray => F(red | blue | green)) & (purple => F(gray | green | blue))) U (brown)"
+- "((purple => F(gray | brown | blue)) & (gray => F(pink | red | green)) & (purple => F(green | blue | gray)) & (gray => F(pink | purple | brown)) & (brown => F(green | purple | gray))) U (orange)"
+- "((blue => F(purple | gray | green)) & (pink => F(blue | brown | purple)) & (pink => F(purple | brown | gray)) & (purple => F(pink | blue | red)) & (purple => F(red | pink | brown))) U (orange)"
+# - "((red => F(pink | orange | gray)) & (green => F(purple | gray | red)) & (orange => F(pink | green | purple)) & (red => F(blue | purple | orange)) & (red => F(blue | pink | gray))) U (brown)"

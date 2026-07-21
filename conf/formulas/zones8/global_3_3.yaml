@@ -1,0 +1,5 @@
+- "(((!pink U ((green) & (!pink U ((gray) & (!pink U ((blue) & true))))))) | ((!pink U ((orange) & (!pink U ((gray) & (!pink U ((green) & true))))))) | ((!pink U ((purple) & (!pink U ((blue) & (!pink U ((purple) & true))))))))"
+- "(((!gray U ((purple) & (!gray U ((orange) & (!gray U ((brown) & true))))))) | ((!gray U ((orange) & (!gray U ((green) & (!gray U ((purple) & true))))))) | ((!gray U ((red) & (!gray U ((pink) & (!gray U ((purple) & true))))))))"
+- "(((!gray U ((pink) & (!gray U ((orange) & (!gray U ((blue) & true))))))) | ((!gray U ((red) & (!gray U ((purple) & (!gray U ((orange) & true))))))) | ((!gray U ((pink) & (!gray U ((brown) & (!gray U ((blue) & true))))))))"
+- "(((!orange U ((blue) & (!orange U ((green) & (!orange U ((brown) & true))))))) | ((!orange U ((green) & (!orange U ((blue) & (!orange U ((pink) & true))))))) | ((!orange U ((green) & (!orange U ((red) & (!orange U ((brown) & true))))))))"
+- "(((!green U ((red) & (!green U ((blue) & (!green U ((brown) & true))))))) | ((!green U ((brown) & (!green U ((red) & (!green U ((gray) & true))))))) | ((!green U ((blue) & (!green U ((pink) & (!green U ((red) & true))))))))"

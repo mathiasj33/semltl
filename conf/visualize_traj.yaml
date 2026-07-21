@@ -1,0 +1,30 @@
+defaults:
+  - experiment: semltl/zones8
+  - hydra: simple
+  - _self_
+  - optional local: local
+
+env:
+  use_precomputed_resets: true
+  precomputed_resets_path: sampled_resets_test.eqx
+
+run: main
+
+eval:
+  formula: "GF red & GF green"
+  model_index: 0
+  num_episodes: 8
+  deterministic: false
+  discount: 0.99
+  models_per_batch: all
+  formulas_per_batch: all
+  vmap_choose_sequences: True
+
+replay: true
+render:
+  frames_per_step: 3
+  pause_between_episodes: 0.5
+
+plotting:
+  rows: 2
+  cols: 4

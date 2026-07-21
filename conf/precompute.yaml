@@ -1,0 +1,11 @@
+defaults:
+  - experiment: semltl/zones8
+  - hydra: simple
+  - _self_
+  - optional local: local
+
+rl_alg:
+  num_envs: 2048
+# precompute-specific params
+num_resets: 1e6
+train: true

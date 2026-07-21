@@ -1,0 +1,5 @@
+- "GF(c) & G(c => F(g | a)) & G(g => F(l | e)) & G(a => F(h | d))"
+- "GF(g) & G(g => F(b | a)) & G(b => F(f | h)) & G(a => F(e | i))"
+- "GF(d) & G(d => F(a | c)) & G(a => F(e | i)) & G(c => F(f | k))"
+- "GF(j) & G(j => F(c | l)) & G(c => F(h | a)) & G(l => F(f | b))"
+- "GF(l) & G(l => F(g | e)) & G(g => F(f | h)) & G(e => F(k | d))"
