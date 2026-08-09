@@ -106,7 +106,15 @@ def load_from_treedef(path: Path | str) -> PyTree:
         # 2. Decode the treedef
         treedef_b64 = metadata["treedef_b64"]
         treedef_bytes = base64.b64decode(treedef_b64)
-        treedef = pickle.loads(treedef_bytes)
+        try:
+            treedef = pickle.loads(treedef_bytes)
+        except ModuleNotFoundError as error:
+            # Equinox 0.13.8 moved its internal flattening sentinel to a new
+            # module. Treedefs written by that release cannot be unpickled by
+            # 0.13.2, which is the version used by this project.
+            if error.name != "equinox._module._flatten":
+                raise
+            return _load_semantic_ldba_leaves(f)
 
         # 3. Load the leaves
         # Since we don't have a template, we cannot use eqx.tree_deserialise_leaves.
@@ -118,8 +126,38 @@ def load_from_treedef(path: Path | str) -> PyTree:
             leaves.append(jnp.load(f))
 
         # 4. Reconstruct the model
-        model = jax.tree.unflatten(treedef, leaves)
+        try:
+            model = jax.tree.unflatten(treedef, leaves)
+        except TypeError as error:
+            # Equinox's private `_Missing` sentinel is stored in the pickled
+            # PyTreeDef. Pickle recreates it as a different object, so recent
+            # Equinox versions fail while unflattening a tree they just wrote.
+            if "'_Missing' object is not subscriptable" not in str(error):
+                raise
+            f.seek(len(header_line) + 1)
+            return _load_semantic_ldba_leaves(f)
     return _reinstantiate(model)
+
+
+def _load_semantic_ldba_leaves(file) -> PyTree:
+    """Load the fixed eight-array representation used by JaxSemanticLDBA.
+
+    This compatibility path avoids Equinox's private, version-dependent
+    PyTreeDef metadata while preserving the array payload.
+    """
+    from jaxltl.semltl.utils.jax_semantic_ldba import JaxSemanticLDBA
+
+    leaves = [jnp.load(file) for _ in range(8)]
+    return JaxSemanticLDBA(
+        num_states=leaves[0],
+        initial_state=leaves[1],
+        transitions=leaves[2],
+        accepting=leaves[3],
+        sink_states=leaves[4],
+        finite=leaves[5],
+        epsilon_transitions=leaves[6],
+        embeddings=leaves[7],
+    )
 
 
 def _reinstantiate(tree: PyTree) -> PyTree:

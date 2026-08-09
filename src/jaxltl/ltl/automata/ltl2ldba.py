@@ -5,6 +5,7 @@ from jaxltl.ltl.automata.rabinizer import run_rabinizer
 from jaxltl.ltl.automata.semml import run_semml
 from jaxltl.ltl.logic.assignment import Assignment
 from jaxltl.utils import memory
+from jaxltl.ltl.automata.fishsemml import run_fishsemml
 
 
 @memory.cache
@@ -16,6 +17,19 @@ def ltl2ldba(
     from jaxltl.ltl.hoa import HOAParser
 
     hoa = run_rabinizer(formula)
+    return HOAParser(formula, hoa, propositions).parse_hoa()
+
+
+@memory.cache
+def ltlfplus2dba_fishsemml(
+    formula: str,
+    propositions: Iterable[str],
+    assignments: Iterable[Assignment],
+) -> LDBA:
+    """Convert an LTLf+ obligation formula using FishSemML."""
+    from jaxltl.ltl.hoa import HOAParser
+
+    hoa = run_fishsemml(formula, propositions, assignments)
     return HOAParser(formula, hoa, propositions).parse_hoa()
 
 

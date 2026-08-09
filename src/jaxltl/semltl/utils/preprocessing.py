@@ -5,7 +5,8 @@ from tqdm import tqdm
 
 from jaxltl.environments.environment import Environment
 from jaxltl.environments.wrappers.wrapper import EnvWrapper
-from jaxltl.ltl.automata.ltl2ldba import ltl2ldba_semml
+# from jaxltl.ltl.automata.ltl2ldba import ltl2ldba_semml
+from jaxltl.ltl.automata.ltl2ldba import ltlfplus2dba_fishsemml
 from jaxltl.ltl.logic.assignment import Assignment
 from jaxltl.semltl.utils.jax_semantic_ldba import JaxSemanticLDBA
 from jaxltl.utils import memory
@@ -36,22 +37,34 @@ def build_semantic_ldba(
     propositions: tuple[str, ...],
     assignments: tuple[Assignment, ...],
 ):
-    ldba = ltl2ldba_semml(formula, propositions, assignments, use_attention=True)
-    for state in ldba.states:
-        info = ldba.state_to_info[state]
+    # ldba = ltl2ldba_semml(formula, propositions, assignments, use_attention=True)
+    dba = ltlfplus2dba_fishsemml(formula, propositions, assignments)
+    for state in dba.states:
+        info = dba.state_to_info[state]
         info["embedding"] = get_semantic_embedding(info)
-    ldba.prune(list(assignments))
-    ldba.complete_sink_state()
-    ldba.compute_sccs()
-    return ldba
+    dba.prune(list(assignments))
+    dba.complete_sink_state()
+    dba.compute_sccs()
+    return dba
 
 
 def get_semantic_embedding(state_info: dict) -> np.ndarray:
-    embeddings = state_info["embeddings"]
-    if state_info["component"] == "initial":
-        embedding = embeddings["formula_embedding"]
-        embedding += [0.0] * len(embedding)  # empty breakpoint embedding
-    else:
-        embedding = embeddings["master_formula_embedding"]
-        embedding += embeddings["breakpoint_formula_embedding"]
-    return np.array(embedding, dtype=np.float32)
+    embedding = np.asarray(state_info["formula_embedding"], dtype=np.float32)
+
+    expected_size = 38
+    if embedding.shape != (expected_size,):
+        raise ValueError(
+                f"Expected embedding size {expected_size}, got {embedding.shape}"
+            )
+
+    return embedding
+
+# def get_semantic_embedding(state_info: dict) -> np.ndarray:
+#     embeddings = state_info["embeddings"]
+#     if state_info["component"] == "initial":
+#         embedding = embeddings["formula_embedding"]
+#         embedding += [0.0] * len(embedding)  # empty breakpoint embedding
+#     else:
+#         embedding = embeddings["master_formula_embedding"]
+#         embedding += embeddings["breakpoint_formula_embedding"]
+#     return np.array(embedding, dtype=np.float32)
