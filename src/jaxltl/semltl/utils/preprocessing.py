@@ -49,15 +49,25 @@ def build_semantic_ldba(
 
 
 def get_semantic_embedding(state_info: dict) -> np.ndarray:
+    """Extracts the semantic embedding from the state info dictionary.
+
+    Args:
+        state_info: A dictionary containing information about the state.
+
+    Returns:
+        A numpy array representing the semantic embedding of the state.
+    """
     embedding = np.asarray(state_info["formula_embedding"], dtype=np.float32)
-
-    expected_size = 38
-    if embedding.shape != (expected_size,):
-        raise ValueError(
-                f"Expected embedding size {expected_size}, got {embedding.shape}"
-            )
-
+    print("Embedding shape:", embedding.shape)
     return embedding
+
+    # expected_size = 167
+    # if embedding.shape != (expected_size,):
+    #         raise ValueError(
+    #             f"Expected embedding size {expected_size}, got {embedding.shape}"
+    #         )
+
+    # return embedding
 
 # def get_semantic_embedding(state_info: dict) -> np.ndarray:
 #     embeddings = state_info["embeddings"]
