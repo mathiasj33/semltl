@@ -35,7 +35,8 @@ model:
     activation: ${act:tanh}
   embedding_dim: 32
   semantic:
-    embedding_size: 386
+    # embedding_size: 386
+    embedding_size: 167 # From FishSemL embedding of the LDBA for the formula in zone_env8
 
 rl_alg:
   total_timesteps: 3e8
