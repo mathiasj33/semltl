@@ -6,7 +6,7 @@ defaults:
   - /rl_alg: ppo
 
 curriculum:
-  _target_: jaxltl.semltl.curriculum.zone_env_curriculum.make
+  _target_: jaxltl.semltl.curriculum.zone_env_curriculum_ob.make
 
 curriculum_wrapper:
   episode_window: 128
