@@ -47,40 +47,12 @@ class ObligationReachAvoidSampler(Sampler[str]):
 
 
 class ObligationGFSampler(Sampler[str]):
-    """Sample recurrence and safety tasks as universal obligations.
+    """Sample one recurrence target and optional safety constraints.
 
-    ``GF p`` is represented as ``forall(F p)`` and ``G(!q)`` as
-    ``forall(!q)``.
-    """
-
-    def __init__(
-        self,
-        reach: int | tuple[int, int],
-        avoid: int | tuple[int, int],
-        propositions: list[str],
-    ):
-        self.reach = _as_range(reach)
-        self.avoid = _as_range(avoid)
-        self.propositions = propositions
-
-    def sample(self) -> str:
-        reach_count = random.randint(*self.reach)
-        avoid_count = random.randint(*self.avoid)
-        reach = random.sample(self.propositions, reach_count)
-        remaining = [p for p in self.propositions if p not in reach]
-        avoid = random.sample(remaining, min(avoid_count, len(remaining)))
-
-        obligations = [f"∀(F {proposition})" for proposition in reach]
-        if avoid:
-            obligations.append(f"∀(!({' | '.join(avoid)}))")
-        return " & ".join(obligations)
-
-
-class ObligationFGSampler(Sampler[str]):
-    """Sample persistence and safety tasks as LTLf+ obligations.
-
-    ``FG p`` is represented as ``exists(G p)`` and ``G(!q)`` as
-    ``forall(!q)``.
+    ``GF p`` is represented by the native LTLf+ quantifier ``forall-exists``.
+    Only one recurrence target is sampled because conjoining independently
+    generated recurrence automata does not preserve Buchi acceptance in the
+    current FishSemML product construction.
     """
 
     def __init__(
@@ -92,12 +64,12 @@ class ObligationFGSampler(Sampler[str]):
         self.propositions = propositions
 
     def sample(self) -> str:
-        persistent = random.choice(self.propositions)
         avoid_count = random.randint(*self.avoid)
-        remaining = [p for p in self.propositions if p != persistent]
+        reach = random.choice(self.propositions)
+        remaining = [p for p in self.propositions if p != reach]
         avoid = random.sample(remaining, min(avoid_count, len(remaining)))
 
-        obligations = [f"∃(G {persistent})"]
+        obligations = [f"∀∃({reach})"]
         if avoid:
             obligations.append(f"∀(!({' | '.join(avoid)}))")
         return " & ".join(obligations)
@@ -215,21 +187,13 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                     ),
                     RandomCurriculumStage(
                         sampler=ObligationGFSampler(
-                            reach=(2, 3),
-                            avoid=(0, 2),
-                            propositions=propositions,
-                        ),
-                        threshold=None,
-                    ),
-                    RandomCurriculumStage(
-                        sampler=ObligationFGSampler(
                             avoid=(0, 2),
                             propositions=propositions,
                         ),
                         threshold=None,
                     ),
                 ],
-                probs=[0.5, 0.25, 0.25],
+                probs=[0.7, 0.3],
                 threshold=None,
             ),
         ],
