@@ -17,6 +17,16 @@ from jaxltl.ltl2action.curriculum.simple_samplers import (
 from jaxltl.semltl.curriculum.batching import SemanticLDBABatcher
 
 
+class FixedFormulaSampler(Sampler[str]):
+    """Return one fixed formula for a diagnostic curriculum stage."""
+
+    def __init__(self, formula: str):
+        self.formula = formula
+
+    def sample(self) -> str:
+        return self.formula
+
+
 class ObligationReachAvoidSampler(Sampler[str]):
     """Convert a sampled co-safety task into an existential LTLf+ obligation.
 
@@ -188,6 +198,43 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
             ),
         ],
         num_samples=10_000,
+        batcher=SemanticLDBABatcher(),
+        env=env,
+        load_path=load_path,
+    )
+
+
+def make_validation(
+    env: Environment | EnvWrapper, load_path: Path | None = None
+) -> Curriculum:
+    """Create seven single-formula stages for validating LTLf+ integration."""
+
+    propositions = list(env.propositions)
+    required_propositions = 2
+    if len(propositions) < required_propositions:
+        raise ValueError(
+            "The validation curriculum requires at least two propositions."
+        )
+    p, q = propositions[:required_propositions]
+    formulas = [
+        f"∃(F {p})",
+        f"∃(F({p} & F {q}))",
+        f"∃((!{q}) U {p})",
+        f"∃({p} & N({q}))",
+        f"∀({p} -> N({q}))",
+        f"∀∃({p})",
+        f"∀∃({p}) & ∀(!{q})",
+    ]
+    stages = [
+        RandomCurriculumStage(
+            sampler=FixedFormulaSampler(formula),
+            threshold=0.9 if index < len(formulas) - 1 else None,
+        )
+        for index, formula in enumerate(formulas)
+    ]
+    return Curriculum(
+        stages,
+        num_samples=1,
         batcher=SemanticLDBABatcher(),
         env=env,
         load_path=load_path,
