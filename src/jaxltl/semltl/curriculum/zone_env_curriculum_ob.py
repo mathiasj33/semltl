@@ -20,10 +20,9 @@ from jaxltl.semltl.curriculum.batching import SemanticLDBABatcher
 class ObligationReachAvoidSampler(Sampler[str]):
     """Convert a sampled co-safety task into an existential LTLf+ obligation.
 
-    For pure reach tasks, the sampler returns an LTL formula with an outer ``F``.
-    Since that outer eventuality is represented by ``exists`` in LTLf+, it is
-    removed before the remaining finite-trace formula is quantified. Reach-avoid
-    tasks start with ``U`` and are quantified without further rewriting.
+    The temporal operators in the sampled finite-trace formula must be retained:
+    for example, ``exists(F p)`` permits reaching ``p`` later, whereas
+    ``exists(p)`` requires ``p`` in the first automaton letter.
     """
 
     def __init__(
@@ -42,8 +41,7 @@ class ObligationReachAvoidSampler(Sampler[str]):
 
     def sample(self) -> str:
         formula = self.sampler.sample()
-        finite_formula = _remove_outer_finally(formula)
-        return f"∃({finite_formula})"
+        return f"∃({formula})"
 
 
 class ObligationGFSampler(Sampler[str]):
@@ -109,14 +107,6 @@ class ObligationWeakNextSampler(Sampler[str]):
 
 def _as_range(value: int | tuple[int, int]) -> tuple[int, int]:
     return (value, value) if isinstance(value, int) else value
-
-
-def _remove_outer_finally(formula: str) -> str:
-    """Remove the outer ``F(...)`` emitted for a pure reach task."""
-
-    if formula.startswith("F(") and formula.endswith(")"):
-        return formula[2:-1]
-    return formula
 
 
 def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curriculum:
