@@ -112,7 +112,7 @@ class ObligationWeakNextSampler(Sampler[str]):
         finite_formula = selected[-1]
         for proposition in reversed(selected[:-1]):
             finite_formula = f"{proposition} & N({finite_formula})"
-        return f"∃({finite_formula})"
+        return f"∃(F({finite_formula}))"
 
 
 def _as_range(value: int | tuple[int, int]) -> tuple[int, int]:
@@ -220,7 +220,7 @@ def make_validation(
         f"∃(F {p})",
         f"∃(F({p} & F {q}))",
         f"∃((!{q}) U {p})",
-        f"∃({p} & N({q}))",
+        f"∃(F({p} & N({q})))",
         f"∀({p} -> N({q}))",
         f"∀∃({p})",
         f"∀∃({p}) & ∀(!{q})",
