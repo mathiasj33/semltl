@@ -77,9 +77,9 @@ class ObligationGFSampler(Sampler[str]):
         remaining = [p for p in self.propositions if p != reach]
         avoid = random.sample(remaining, min(avoid_count, len(remaining)))
 
-        obligations = [f"∀∃({reach})"]
+        obligations = [f"∀∃(G(F {reach}))"]
         if avoid:
-            obligations.append(f"∀(!({' | '.join(avoid)}))")
+            obligations.append(f"∀(G(!({' | '.join(avoid)})))")
         return " & ".join(obligations)
 
 
@@ -107,7 +107,7 @@ class ObligationWeakNextSampler(Sampler[str]):
 
         if random.random() < self.universal_probability:
             antecedent, consequent = selected[0], selected[1]
-            return f"∀({antecedent} -> N({consequent}))"
+            return f"∀(G({antecedent} -> N({consequent})))"
 
         finite_formula = selected[-1]
         for proposition in reversed(selected[:-1]):
@@ -221,9 +221,9 @@ def make_validation(
         f"∃(F({p} & F {q}))",
         f"∃((!{q}) U {p})",
         f"∃(F({p} & N({q})))",
-        f"∀({p} -> N({q}))",
-        f"∀∃({p})",
-        f"∀∃({p}) & ∀(!{q})",
+        f"∀(G({p} -> N({q})))",
+        f"∀∃(G(F {p}))",
+        f"∀∃(G(F {p})) & ∀(G(!{q}))",
     ]
     stages = [
         RandomCurriculumStage(
