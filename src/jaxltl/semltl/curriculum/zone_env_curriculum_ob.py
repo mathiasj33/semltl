@@ -55,12 +55,12 @@ class ObligationReachAvoidSampler(Sampler[str]):
 
 
 class ObligationGFSampler(Sampler[str]):
-    """Sample one recurrence target and optional safety constraints.
+    """Sample one learnable quantified reach target and optional global safety.
 
-    ``GF p`` is represented by the native LTLf+ quantifier ``forall-exists``.
-    Only one recurrence target is sampled because conjoining independently
-    generated recurrence automata does not preserve Buchi acceptance in the
-    current FishSemML product construction.
+    The inner ``F`` lets the agent navigate before satisfying the target;
+    ``forall-exists(p)`` alone constrains the first letter. Only one target is
+    sampled because the current FishSemML product construction does not preserve
+    Buchi acceptance for independently generated recurrence automata.
     """
 
     def __init__(
@@ -77,9 +77,9 @@ class ObligationGFSampler(Sampler[str]):
         remaining = [p for p in self.propositions if p != reach]
         avoid = random.sample(remaining, min(avoid_count, len(remaining)))
 
-        obligations = [f"∀∃({reach})"]
+        obligations = [f"∀∃(F {reach})"]
         if avoid:
-            obligations.append(f"∀(!({' | '.join(avoid)}))")
+            obligations.append(f"∀(G(!({' | '.join(avoid)})))")
         return " & ".join(obligations)
 
 
