@@ -5,11 +5,12 @@ from tqdm import tqdm
 
 from jaxltl.environments.environment import Environment
 from jaxltl.environments.wrappers.wrapper import EnvWrapper
-# from jaxltl.ltl.automata.ltl2ldba import ltl2ldba_semml
 from jaxltl.ltl.automata.ltl2ldba import ltlfplus2dba_fishsemml
 from jaxltl.ltl.logic.assignment import Assignment
 from jaxltl.semltl.utils.jax_semantic_ldba import JaxSemanticLDBA
 from jaxltl.utils import memory
+
+# from jaxltl.ltl.automata.ltl2ldba import ltl2ldba_semml
 
 
 def preprocess_formulas(
@@ -58,7 +59,6 @@ def get_semantic_embedding(state_info: dict) -> np.ndarray:
         A numpy array representing the semantic embedding of the state.
     """
     embedding = np.asarray(state_info["formula_embedding"], dtype=np.float32)
-    print("Embedding shape:", embedding.shape)
     return embedding
 
     # expected_size = 167
@@ -68,6 +68,7 @@ def get_semantic_embedding(state_info: dict) -> np.ndarray:
     #         )
 
     # return embedding
+
 
 # def get_semantic_embedding(state_info: dict) -> np.ndarray:
 #     embeddings = state_info["embeddings"]

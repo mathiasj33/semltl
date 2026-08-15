@@ -73,7 +73,7 @@ class JaxSemanticLDBA(JaxLDBA):
         return epsilon_embeddings  # (max_eps_transitions, embedding_dim)
 
     @classmethod
-    def from_ldbas(
+    def from_ldbas(  # noqa: PLR0912
         cls,
         ldbas: list[LDBA],
         env: Environment | EnvWrapper,
@@ -139,8 +139,11 @@ class JaxSemanticLDBA(JaxLDBA):
             enumerate(ldbas), desc="Processing LDBAs", total=len(ldbas)
         ):
             for state in range(ldba.num_states):
-                scc = ldba.state_to_scc[state]
-                if scc.bottom and not scc.accepting:
+                # SCC computation starts at the initial state. FishSemML HOAs can
+                # retain states that become unreachable after eligible-letter
+                # pruning, so those states legitimately have no SCC entry.
+                scc = ldba.state_to_scc.get(state)
+                if scc is not None and scc.bottom and not scc.accepting:
                     sink_states[i, state] = True
                 if state in ldba.state_to_info:
                     # otherwise it's a sink state - embedding remains -1s
