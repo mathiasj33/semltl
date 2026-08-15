@@ -33,6 +33,8 @@ mkdir dependencies
 ln -s semml dependencies/semml
 ```
 
+SemML requires Java 17 to be installed and `$JAVA_HOME` to be set accordingly.
+
 To test if the SemML installation is working, the following command should output an LDBA:
 
 ```bash
