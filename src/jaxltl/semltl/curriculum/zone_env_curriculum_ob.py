@@ -7,7 +7,6 @@ from jaxltl.environments.environment import Environment
 from jaxltl.environments.wrappers.wrapper import EnvWrapper
 from jaxltl.ltl2action.curriculum.curriculum import (
     Curriculum,
-    MultiRandomStage,
     RandomCurriculumStage,
     Sampler,
 )
@@ -41,6 +40,9 @@ class ObligationReachAvoidSampler(Sampler[str]):
         reach: int | tuple[int, int],
         avoid: int | tuple[int, int],
         propositions: list[str],
+        remove_outer_finally: bool = False,
+        shift_to_next: bool = False,
+        simplify_terminal_true: bool = False,
     ):
         self.sampler = SimpleReachAvoidFormulaSampler(
             depth=depth,
@@ -48,39 +50,19 @@ class ObligationReachAvoidSampler(Sampler[str]):
             avoid=avoid,
             propositions=propositions,
         )
+        self.remove_outer_finally = remove_outer_finally
+        self.shift_to_next = shift_to_next
+        self.simplify_terminal_true = simplify_terminal_true
 
     def sample(self) -> str:
         formula = self.sampler.sample()
+        if self.remove_outer_finally:
+            formula = _remove_outer_finally(formula)
+        if self.simplify_terminal_true:
+            formula = _simplify_terminal_true(formula)
+        if self.shift_to_next:
+            formula = f"X({formula})"
         return f"∃({formula})"
-
-
-class ObligationGFSampler(Sampler[str]):
-    """Sample one learnable quantified reach target and optional global safety.
-
-    The inner ``F`` lets the agent navigate before satisfying the target;
-    ``forall-exists(p)`` alone constrains the first letter. Only one target is
-    sampled because the current FishSemML product construction does not preserve
-    Buchi acceptance for independently generated recurrence automata.
-    """
-
-    def __init__(
-        self,
-        avoid: int | tuple[int, int],
-        propositions: list[str],
-    ):
-        self.avoid = _as_range(avoid)
-        self.propositions = propositions
-
-    def sample(self) -> str:
-        avoid_count = random.randint(*self.avoid)
-        reach = random.choice(self.propositions)
-        remaining = [p for p in self.propositions if p != reach]
-        avoid = random.sample(remaining, min(avoid_count, len(remaining)))
-
-        obligations = [f"∀∃(F {reach})"]
-        if avoid:
-            obligations.append(f"∀(G(!({' | '.join(avoid)})))")
-        return " & ".join(obligations)
 
 
 class ObligationWeakNextSampler(Sampler[str]):
@@ -119,6 +101,26 @@ def _as_range(value: int | tuple[int, int]) -> tuple[int, int]:
     return (value, value) if isinstance(value, int) else value
 
 
+def _remove_outer_finally(formula: str) -> str:
+    """Remove the outer ``F(...)`` from a simple reach formula."""
+
+    if formula.startswith("F(") and formula.endswith(")"):
+        return formula[2:-1]
+    raise ValueError(f"Expected a formula with an outer F, got: {formula}")
+
+
+def _simplify_terminal_true(formula: str) -> str:
+    """Simplify the ``(p) & true`` suffix of a one-step reach formula."""
+
+    suffix = " & true"
+    if not formula.endswith(suffix):
+        raise ValueError(f"Expected a formula ending in '{suffix}', got: {formula}")
+    formula = formula[: -len(suffix)]
+    if formula.startswith("(") and formula.endswith(")"):
+        return formula[1:-1]
+    return formula
+
+
 def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curriculum:
     """Create the Zones8 curriculum using only LTLf+ obligation formulas."""
 
@@ -132,6 +134,9 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                     reach=1,
                     avoid=0,
                     propositions=propositions,
+                    remove_outer_finally=True,
+                    shift_to_next=True,
+                    simplify_terminal_true=True,
                 ),
                 threshold=0.9,
             ),
@@ -142,6 +147,8 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                     reach=1,
                     avoid=0,
                     propositions=propositions,
+                    remove_outer_finally=True,
+                    shift_to_next=True,
                 ),
                 threshold=0.95,
             ),
@@ -173,27 +180,14 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                 ),
                 threshold=0.9,
             ),
-            # 6. Final mixture of existential and universal obligations
-            MultiRandomStage(
-                [
-                    RandomCurriculumStage(
-                        sampler=ObligationReachAvoidSampler(
-                            depth=(1, 2),
-                            reach=(1, 2),
-                            avoid=(0, 2),
-                            propositions=propositions,
-                        ),
-                        threshold=None,
-                    ),
-                    RandomCurriculumStage(
-                        sampler=ObligationGFSampler(
-                            avoid=(0, 2),
-                            propositions=propositions,
-                        ),
-                        threshold=None,
-                    ),
-                ],
-                probs=[0.7, 0.3],
+            # 6. General existential reach and reach-avoid obligations
+            RandomCurriculumStage(
+                sampler=ObligationReachAvoidSampler(
+                    depth=(1, 2),
+                    reach=(1, 2),
+                    avoid=(0, 2),
+                    propositions=propositions,
+                ),
                 threshold=None,
             ),
         ],
