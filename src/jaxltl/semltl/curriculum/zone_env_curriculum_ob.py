@@ -204,17 +204,17 @@ def make_validation(
     required_propositions = 4
     if len(propositions) < required_propositions:
         raise ValueError(
-            "The validation curriculum requires at least two propositions."
+            "The validation curriculum requires at least four propositions."
         )
     p, q, r, s = propositions[:required_propositions]
     formulas = [
-        f"F{p}",
-        f"F( ({p} & F {q}))",
-        f"∀((!{q}) U {p})",
-        f"∃((!{q}) U ({p} & ((!{r}) U {s})))",
-        f"∃(F({p} & N({q})))",
-        f"∀({p} -> N({q}))",
-        f"∃(!({q} | {r}) U ({p} | {s}))",
+        f"E(F({p}))",
+        f"E(X({p} & F({q})))",
+        f"A((!{q}) U {p})",
+        f"E((!{q}) U ({p} & ((!{r}) U {s})))",
+        f"E(F({p} & N({q})))",
+        f"A({p} -> N({q}))",
+        f"E(!({q} | {r}) U ({p} | {s}))",
     ]
     stages = [
         RandomCurriculumStage(
