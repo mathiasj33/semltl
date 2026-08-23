@@ -40,9 +40,7 @@ class ObligationReachAvoidSampler(Sampler[str]):
         reach: int | tuple[int, int],
         avoid: int | tuple[int, int],
         propositions: list[str],
-        remove_outer_finally: bool = False,
-        shift_to_next: bool = False,
-        simplify_terminal_true: bool = False,
+        quantifier: str = "E",
     ):
         self.sampler = SimpleReachAvoidFormulaSampler(
             depth=depth,
@@ -50,19 +48,11 @@ class ObligationReachAvoidSampler(Sampler[str]):
             avoid=avoid,
             propositions=propositions,
         )
-        self.remove_outer_finally = remove_outer_finally
-        self.shift_to_next = shift_to_next
-        self.simplify_terminal_true = simplify_terminal_true
+        self.quantifier = quantifier
 
     def sample(self) -> str:
         formula = self.sampler.sample()
-        if self.remove_outer_finally:
-            formula = _remove_outer_finally(formula)
-        if self.simplify_terminal_true:
-            formula = _simplify_terminal_true(formula)
-        if self.shift_to_next:
-            formula = f"X({formula})"
-        return f"∃({formula})"
+        return f"{self.quantifier}({formula})"
 
 
 class ObligationWeakNextSampler(Sampler[str]):
@@ -89,36 +79,16 @@ class ObligationWeakNextSampler(Sampler[str]):
 
         if random.random() < self.universal_probability:
             antecedent, consequent = selected[0], selected[1]
-            return f"∀({antecedent} -> N({consequent}))"
+            return f"A({antecedent} -> N({consequent}))"
 
         finite_formula = selected[-1]
         for proposition in reversed(selected[:-1]):
             finite_formula = f"{proposition} & N({finite_formula})"
-        return f"∃(F({finite_formula}))"
+        return f"E(F({finite_formula}))"
 
 
 def _as_range(value: int | tuple[int, int]) -> tuple[int, int]:
     return (value, value) if isinstance(value, int) else value
-
-
-def _remove_outer_finally(formula: str) -> str:
-    """Remove the outer ``F(...)`` from a simple reach formula."""
-
-    if formula.startswith("F(") and formula.endswith(")"):
-        return formula[2:-1]
-    raise ValueError(f"Expected a formula with an outer F, got: {formula}")
-
-
-def _simplify_terminal_true(formula: str) -> str:
-    """Simplify the ``(p) & true`` suffix of a one-step reach formula."""
-
-    suffix = " & true"
-    if not formula.endswith(suffix):
-        raise ValueError(f"Expected a formula ending in '{suffix}', got: {formula}")
-    formula = formula[: -len(suffix)]
-    if formula.startswith("(") and formula.endswith(")"):
-        return formula[1:-1]
-    return formula
 
 
 def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curriculum:
@@ -144,8 +114,6 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                     reach=1,
                     avoid=0,
                     propositions=propositions,
-                    remove_outer_finally=True,
-                    shift_to_next=True,
                 ),
                 threshold=0.95,
             ),
@@ -156,6 +124,7 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                     reach=1,
                     avoid=1,
                     propositions=propositions,
+                    quantifier="A",
                 ),
                 threshold=0.95,
             ),
