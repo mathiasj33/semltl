@@ -198,23 +198,23 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
 def make_validation(
     env: Environment | EnvWrapper, load_path: Path | None = None
 ) -> Curriculum:
-    """Create seven single-formula stages for validating LTLf+ integration."""
+    """Create fixed examples of every formula family in the main curriculum."""
 
     propositions = list(env.propositions)
-    required_propositions = 2
+    required_propositions = 4
     if len(propositions) < required_propositions:
         raise ValueError(
             "The validation curriculum requires at least two propositions."
         )
-    p, q = propositions[:required_propositions]
+    p, q, r, s = propositions[:required_propositions]
     formulas = [
         f"∃(F {p})",
-        f"∃(F({p} & F {q}))",
+        f"∃( ({p} & F {q}))",
         f"∃((!{q}) U {p})",
+        f"∃((!{q}) U ({p} & ((!{r}) U {s})))",
         f"∃(F({p} & N({q})))",
         f"∀({p} -> N({q}))",
-        f"∀∃(F {p})",
-        f"∀∃(F {p}) & ∀(G(!{q}))",
+        f"∃(!({q} | {r}) U ({p} | {s}))",
     ]
     stages = [
         RandomCurriculumStage(
