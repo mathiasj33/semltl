@@ -208,9 +208,9 @@ def make_validation(
         )
     p, q, r, s = propositions[:required_propositions]
     formulas = [
-        f"∃(F {p})",
+        f"∃( {p})",
         f"∃( ({p} & F {q}))",
-        f"∃((!{q}) U {p})",
+        f"∀((!{q}) U {p})",
         f"∃((!{q}) U ({p} & ((!{r}) U {s})))",
         f"∃(F({p} & N({q})))",
         f"∀({p} -> N({q}))",
