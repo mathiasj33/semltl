@@ -1,0 +1,38 @@
+# Standard-LTL counterparts of obligations.yaml, in the same order.
+# Stage 1: reach
+- "F(purple)"
+- "F(brown)"
+
+# Stage 2: sequential reach
+- "F(purple & F(brown))"
+- "F(green & F(pink))"
+
+# Stage 3: globally quantified reach-avoid
+- "G((!orange) U purple)"
+- "G((!gray) U green)"
+
+# Stage 4: sequential reach-avoid
+- "F(((!orange) U (purple & ((!gray) U brown))))"
+- "F(((!red) U (green & ((!blue) U pink))))"
+
+# Stage 5: eventual next and global next-response counterparts
+- "F(purple & X(brown))"
+- "F(green & X(pink))"
+- "G(purple -> X(brown))"
+- "G(green -> X(pink))"
+
+# Stage 6: general multi-target/multi-avoid reach obligations
+- "!(orange | gray) U (purple | brown)"
+- "!(red | blue) U ((green | pink) & F(purple | brown))"
+
+# Unseen family: pure global safety
+- "G(!orange)"
+- "G(!(gray | red))"
+
+# Unseen family: unordered conjunctive guarantees
+- "F(purple) & F(brown)"
+- "F(green | pink) & F(blue)"
+
+# Unseen family: combined safety and guarantee
+- "F(purple) & G(!orange)"
+- "F(green) & F(pink) & G(!(gray | red))"
