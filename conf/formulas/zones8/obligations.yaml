@@ -1,15 +1,38 @@
 # Held-out LTLf+ obligations covering the formula families used for training.
-- "∃(F purple)"
-- "∃(F brown)"
-- "∃(F(purple & F brown))"
-- "∃(F(green & F pink))"
-- "∃((!orange) U purple)"
-- "∃((!gray) U green)"
-- "∃(F(purple & N(brown)))"
-- "∃(F(green & N(pink)))"
-- "∀(purple -> N(brown))"
-- "∀(green -> N(pink))"
-- "∀∃(F purple)"
-- "∀∃(F green)"
-- "∀∃(F purple) & ∀(G(!orange))"
-- "∀∃(F green) & ∀(G(!(gray | red)))"
+# Stage 1: existential reach
+- "E(F(purple))"
+- "E(F(brown))"
+
+# Stage 2: existential sequential reach
+- "E(F(purple & F(brown)))"
+- "E(F(green & F(pink)))"
+
+# Stage 3: universal reach-avoid
+- "A((!orange) U purple)"
+- "A((!gray) U green)"
+
+# Stage 4: existential sequential reach-avoid
+- "E((!orange) U (purple & ((!gray) U brown)))"
+- "E((!red) U (green & ((!blue) U pink)))"
+
+# Stage 5: existential and universal weak-next obligations
+- "E(F(purple & N(brown)))"
+- "E(F(green & N(pink)))"
+- "A(purple -> N(brown))"
+- "A(green -> N(pink))"
+
+# Stage 6: general multi-target/multi-avoid existential obligations
+- "E(!(orange | gray) U (purple | brown))"
+- "E(!(red | blue) U ((green | pink) & F(purple | brown)))"
+
+# Unseen family: pure global safety obligations
+- "A(G(!orange))"
+- "A(G(!(gray | red)))"
+
+# Unseen family: unordered conjunctive guarantee obligations
+- "E(F(purple) & F(brown))"
+- "E(F(green | pink) & F(blue))"
+
+# Unseen family: combined safety-guarantee obligations
+- "E(F(purple)) & A(G(!orange))"
+- "E(F(green) & F(pink)) & A(G(!(gray | red)))"
