@@ -17,6 +17,9 @@ class JaxSemanticLDBA(JaxLDBA):
     transitions: jax.Array  # shape: (num_states, num_assignments) -> int32
     epsilon_transitions: jax.Array  # shape: (num_states, max_eps_transitions) -> int32
     embeddings: jax.Array  # shape: (num_states, embedding_dim) -> float32
+    # Finite-word state acceptance supplied by FishSemML. Original SemML
+    # automata do not provide this metadata and therefore remain all false.
+    accepting_states: jax.Array  # shape: (num_states,) -> bool
 
     def get_embedding(self, state: jax.Array) -> jax.Array:
         """Get the semantic embedding for the given LDBA state.
@@ -127,6 +130,7 @@ class JaxSemanticLDBA(JaxLDBA):
             (batch_size, max_num_states, max_eps_transitions), dtype=np.int32
         )
         accepting = np.zeros((batch_size, max_num_states, num_assignments), dtype=bool)
+        accepting_states = np.zeros((batch_size, max_num_states), dtype=bool)
         sink_states = np.zeros((batch_size, max_num_states), dtype=bool)
         embeddings = -np.ones(
             (batch_size, max_num_states, max_embedding_dim), dtype=embedding_dtype
@@ -147,8 +151,12 @@ class JaxSemanticLDBA(JaxLDBA):
                     sink_states[i, state] = True
                 if state in ldba.state_to_info:
                     # otherwise it's a sink state - embedding remains -1s
-                    embedding = ldba.state_to_info[state]["embedding"]
+                    state_info = ldba.state_to_info[state]
+                    embedding = state_info["embedding"]
                     embeddings[i, state, : embedding.shape[0]] = embedding
+                    accepting_states[i, state] = bool(
+                        state_info.get("accepting", False)
+                    )
                 eps_index = 0
                 for eps_index, target in enumerate(
                     ldba.get_ordered_epsilon_transitions(state)
@@ -178,4 +186,5 @@ class JaxSemanticLDBA(JaxLDBA):
             finite=jnp.array(finite),
             sink_states=jnp.array(sink_states),
             embeddings=jnp.array(embeddings),
+            accepting_states=jnp.array(accepting_states),
         )
