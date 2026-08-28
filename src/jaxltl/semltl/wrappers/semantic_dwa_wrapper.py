@@ -83,6 +83,7 @@ class SemanticDWAWrapper[
             info={
                 "satisfied": jnp.asarray(False),
                 "dwa_accepting": jnp.asarray(False),
+                "dwa_accepting_sink": jnp.asarray(False),
                 "dwa_rejecting_sink": jnp.asarray(False),
             },
         )
