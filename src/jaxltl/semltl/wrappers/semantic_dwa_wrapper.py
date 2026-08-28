@@ -77,7 +77,14 @@ class SemanticDWAWrapper[
             ldba_state=options.task.initial_state,
             obs=obs,
             propositions=propositions,
-            info={},
+            # Keep the reset and step states structurally identical. JAX control
+            # flow (e.g. AutoResetWrapper's lax.cond) requires both branches to
+            # have the same pytree keys, even before these values are meaningful.
+            info={
+                "satisfied": jnp.asarray(False),
+                "dwa_accepting": jnp.asarray(False),
+                "dwa_rejecting_sink": jnp.asarray(False),
+            },
         )
         return state, self._observation(obs, state.ldba, state.ldba_state)
 
