@@ -124,7 +124,7 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                     reach=1,
                     avoid=1,
                     propositions=propositions,
-                    quantifier="A",
+                    quantifier="E",
                 ),
                 threshold=0.95,
             ),
@@ -138,15 +138,25 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
                 ),
                 threshold=0.9,
             ),
-            # 5. LTLf+ weak-next sequence and response obligations
+            # 5. Existential weak-next sequence obligations
             RandomCurriculumStage(
                 sampler=ObligationWeakNextSampler(
-                    depth=(2, 3),
+                    depth=2,
                     propositions=propositions,
+                    universal_probability=0.0,
                 ),
                 threshold=0.9,
             ),
-            # 6. General existential reach and reach-avoid obligations
+            # 6. Universal weak-next response obligations
+            RandomCurriculumStage(
+                sampler=ObligationWeakNextSampler(
+                    depth=2,
+                    propositions=propositions,
+                    universal_probability=1.0,
+                ),
+                threshold=0.9,
+            ),
+            # 7. General existential reach and reach-avoid obligations
             RandomCurriculumStage(
                 sampler=ObligationReachAvoidSampler(
                     depth=(1, 2),
@@ -179,7 +189,7 @@ def make_validation(
     formulas = [
         f"E(F({p}))",
         f"E(F({p} & F({q})))",
-        f"A((!{q}) U {p})",
+        f"E((!{q}) U {p})",
         f"E((!{q}) U ({p} & ((!{r}) U {s})))",
         f"E(F({p} & N({q})))",
         f"A({p} -> N({q}))",

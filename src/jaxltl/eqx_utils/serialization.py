@@ -140,7 +140,7 @@ def load_from_treedef(path: Path | str) -> PyTree:
 
 
 def _load_semantic_ldba_leaves(file) -> PyTree:
-    """Load the fixed eight-array representation used by JaxSemanticLDBA.
+    """Load a legacy or state-acceptance JaxSemanticLDBA payload.
 
     This compatibility path avoids Equinox's private, version-dependent
     PyTreeDef metadata while preserving the array payload.
@@ -148,6 +148,18 @@ def _load_semantic_ldba_leaves(file) -> PyTree:
     from jaxltl.semltl.utils.jax_semantic_ldba import JaxSemanticLDBA
 
     leaves = [jnp.load(file) for _ in range(8)]
+    state_shape = leaves[4].shape
+    accepting_states = jnp.zeros(state_shape, dtype=jnp.bool)
+    accepting_sink_states = jnp.zeros(state_shape, dtype=jnp.bool)
+    rejecting_sink_states = leaves[4].astype(jnp.bool)
+    try:
+        accepting_states = jnp.load(file)
+        accepting_sink_states = jnp.load(file)
+        rejecting_sink_states = jnp.load(file)
+    except (EOFError, ValueError):
+        # Old eight-array files contain no finite-word state metadata. Preserve
+        # their known rejecting sinks and leave state/true-sink acceptance off.
+        pass
     return JaxSemanticLDBA(
         num_states=leaves[0],
         initial_state=leaves[1],
@@ -157,6 +169,9 @@ def _load_semantic_ldba_leaves(file) -> PyTree:
         finite=leaves[5],
         epsilon_transitions=leaves[6],
         embeddings=leaves[7],
+        accepting_states=accepting_states,
+        accepting_sink_states=accepting_sink_states,
+        rejecting_sink_states=rejecting_sink_states,
     )
 
 

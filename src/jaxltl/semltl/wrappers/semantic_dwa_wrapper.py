@@ -105,19 +105,23 @@ class SemanticDWAWrapper[
 
         assignment = self._env.map_assignment_to_index(transition.propositions)
         next_dwa_state = state.ldba.transitions[state.ldba_state, assignment]
-        is_sink = state.ldba.is_sink_state(next_dwa_state)
         is_accepting_state = state.ldba.accepting_states[next_dwa_state]
+        is_accepting_sink = state.ldba.accepting_sink_states[next_dwa_state]
+        is_rejecting_sink = state.ldba.rejecting_sink_states[next_dwa_state]
 
         trace_ended = transition.done
-        satisfied = trace_ended & is_accepting_state & ~is_sink
-        failed = is_sink | (trace_ended & ~is_accepting_state)
+        satisfied = is_accepting_sink | (
+            trace_ended & is_accepting_state & ~is_rejecting_sink
+        )
+        failed = is_rejecting_sink | (trace_ended & ~is_accepting_state)
         reward = jnp.where(failed, -1.0, jnp.where(satisfied, 1.0, 0.0))
 
         info = {
             **transition.info,
             "satisfied": satisfied,
             "dwa_accepting": is_accepting_state,
-            "dwa_rejecting_sink": is_sink,
+            "dwa_accepting_sink": is_accepting_sink,
+            "dwa_rejecting_sink": is_rejecting_sink,
         }
         new_state = SemanticLDBAWrapperState(
             state=transition.state,
@@ -137,7 +141,9 @@ class SemanticDWAWrapper[
             state=new_state,
             observation=observation,
             reward=reward,
-            terminated=transition.terminated | is_sink,
+            terminated=(
+                transition.terminated | is_accepting_sink | is_rejecting_sink
+            ),
             truncated=transition.truncated,
             terminal_observation=terminal_observation,
             propositions=transition.propositions,

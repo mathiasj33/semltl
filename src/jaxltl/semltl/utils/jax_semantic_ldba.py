@@ -20,6 +20,11 @@ class JaxSemanticLDBA(JaxLDBA):
     # Finite-word state acceptance supplied by FishSemML. Original SemML
     # automata do not provide this metadata and therefore remain all false.
     accepting_states: jax.Array  # shape: (num_states,) -> bool
+    # Closed components in which every state has the same finite-word truth
+    # value. These are computed from FishSemML state metadata, independently
+    # of the HOA's Büchi transition annotations.
+    accepting_sink_states: jax.Array  # shape: (num_states,) -> bool
+    rejecting_sink_states: jax.Array  # shape: (num_states,) -> bool
 
     def get_embedding(self, state: jax.Array) -> jax.Array:
         """Get the semantic embedding for the given LDBA state.
@@ -131,6 +136,12 @@ class JaxSemanticLDBA(JaxLDBA):
         )
         accepting = np.zeros((batch_size, max_num_states, num_assignments), dtype=bool)
         accepting_states = np.zeros((batch_size, max_num_states), dtype=bool)
+        accepting_sink_states = np.zeros(
+            (batch_size, max_num_states), dtype=bool
+        )
+        rejecting_sink_states = np.zeros(
+            (batch_size, max_num_states), dtype=bool
+        )
         sink_states = np.zeros((batch_size, max_num_states), dtype=bool)
         embeddings = -np.ones(
             (batch_size, max_num_states, max_embedding_dim), dtype=embedding_dtype
@@ -142,6 +153,31 @@ class JaxSemanticLDBA(JaxLDBA):
         for i, ldba in tqdm(
             enumerate(ldbas), desc="Processing LDBAs", total=len(ldbas)
         ):
+            # Classify each closed SCC using FishSemML's finite-word state
+            # acceptance. A synthetic completion sink has no state metadata
+            # and is therefore rejecting. Mixed-acceptance SCCs are neither
+            # true nor false sinks because future letters can still matter.
+            classified_sccs: set[int] = set()
+            for scc in ldba.state_to_scc.values():
+                scc_identity = id(scc)
+                if scc_identity in classified_sccs or not scc.bottom:
+                    continue
+                classified_sccs.add(scc_identity)
+                state_acceptance = [
+                    bool(
+                        ldba.state_to_info.get(scc_state, {}).get(
+                            "accepting", False
+                        )
+                    )
+                    for scc_state in scc.states
+                ]
+                if all(state_acceptance):
+                    for scc_state in scc.states:
+                        accepting_sink_states[i, scc_state] = True
+                elif not any(state_acceptance):
+                    for scc_state in scc.states:
+                        rejecting_sink_states[i, scc_state] = True
+
             for state in range(ldba.num_states):
                 # SCC computation starts at the initial state. FishSemML HOAs can
                 # retain states that become unreachable after eligible-letter
@@ -187,4 +223,6 @@ class JaxSemanticLDBA(JaxLDBA):
             sink_states=jnp.array(sink_states),
             embeddings=jnp.array(embeddings),
             accepting_states=jnp.array(accepting_states),
+            accepting_sink_states=jnp.array(accepting_sink_states),
+            rejecting_sink_states=jnp.array(rejecting_sink_states),
         )
