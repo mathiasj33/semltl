@@ -114,7 +114,10 @@ class SemanticDWAWrapper[
         satisfied = is_accepting_sink | (
             trace_ended & is_accepting_state & ~is_rejecting_sink
         )
-        failed = is_rejecting_sink | (trace_ended & ~is_accepting_state)
+        # Match original SemLTL's training signal: an irrevocable rejection is
+        # penalized, but an unresolved formula at the time limit is neutral.
+        # Exact finite-trace success remains available through `satisfied`.
+        failed = is_rejecting_sink
         reward = jnp.where(failed, -1.0, jnp.where(satisfied, 1.0, 0.0))
 
         info = {
