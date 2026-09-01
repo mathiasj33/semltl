@@ -32,14 +32,18 @@ class SemanticDWAWrapper[
     interpreting a positive accumulated reward as success.
     """
 
+    buchi_rewards: bool
+
     def __init__(
         self,
         env: (
             EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]
             | Environment[Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
         ),
+        buchi_rewards: bool = False,
     ):
         super().__init__(env)
+        self.buchi_rewards = buchi_rewards
 
     def _observation(
         self,
@@ -118,7 +122,19 @@ class SemanticDWAWrapper[
         # penalized, but an unresolved formula at the time limit is neutral.
         # Exact finite-trace success remains available through `satisfied`.
         failed = is_rejecting_sink
-        reward = jnp.where(failed, -1.0, jnp.where(satisfied, 1.0, 0.0))
+        finite_reward = jnp.where(
+            failed, -1.0, jnp.where(satisfied, 1.0, 0.0)
+        )
+        # Optional evaluation metric matching SemLTL's recurring Büchi-style
+        # signal: every transition into an accepting state contributes +1.
+        # Rejecting sinks remain negative, although the evaluator clips their
+        # reward when accumulating its non-negative acceptance value.
+        buchi_reward = jnp.where(
+            is_rejecting_sink,
+            -1.0,
+            jnp.where(is_accepting_state, 1.0, 0.0),
+        )
+        reward = jnp.where(self.buchi_rewards, buchi_reward, finite_reward)
 
         info = {
             **transition.info,
