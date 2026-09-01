@@ -7,21 +7,23 @@
 - "E(F(purple & F(brown)))"
 - "E(F(green & F(pink)))"
 
-# Stage 3: universal reach-avoid
-- "A((!orange) U purple)"
-- "A((!gray) U green)"
+# Stage 3: existential reach-avoid
+- "E((!orange) U purple)"
+- "E((!gray) U green)"
 
 # Stage 4: existential sequential reach-avoid
 - "E((!orange) U (purple & ((!gray) U brown)))"
 - "E((!red) U (green & ((!blue) U pink)))"
 
-# Stage 5: existential and universal weak-next obligations
+# Stage 5: existential weak-next sequence obligations
 - "E(F(purple & N(brown)))"
 - "E(F(green & N(pink)))"
+
+# Stage 6: universal weak-next response obligations
 - "A(purple -> N(brown))"
 - "A(green -> N(pink))"
 
-# Stage 6: general multi-target/multi-avoid existential obligations
+# Stage 7: general multi-target/multi-avoid existential obligations
 - "E(!(orange | gray) U (purple | brown))"
 - "E(!(red | blue) U ((green | pink) & F(purple | brown)))"
 

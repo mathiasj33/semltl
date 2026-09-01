@@ -89,7 +89,7 @@ def main(cfg: DictConfig):
     # log to stdout and save to CSV
     log_and_save_results(cfg, returns, lengths)
 
-    if cfg.alg.name == "semltl":
+    if str(cfg.alg.name).startswith("semltl"):
         num_states = info["num_visited_ldba_states"]
         successes = returns > 0
         num_states = num_states * successes

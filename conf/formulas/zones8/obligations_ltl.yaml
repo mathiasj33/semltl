@@ -7,21 +7,23 @@
 - "F(purple & F(brown))"
 - "F(green & F(pink))"
 
-# Stage 3: globally quantified reach-avoid
-- "G((!orange) U purple)"
-- "G((!gray) U green)"
+# Stage 3: reach-avoid
+- "(!orange) U purple"
+- "(!gray) U green"
 
 # Stage 4: sequential reach-avoid
 - "F(((!orange) U (purple & ((!gray) U brown))))"
 - "F(((!red) U (green & ((!blue) U pink))))"
 
-# Stage 5: eventual next and global next-response counterparts
+# Stage 5: eventual strong-next sequence counterparts
 - "F(purple & X(brown))"
 - "F(green & X(pink))"
+
+# Stage 6: global strong-next response counterparts
 - "G(purple -> X(brown))"
 - "G(green -> X(pink))"
 
-# Stage 6: general multi-target/multi-avoid reach obligations
+# Stage 7: general multi-target/multi-avoid reach obligations
 - "!(orange | gray) U (purple | brown)"
 - "!(red | blue) U ((green | pink) & F(purple | brown))"
 
