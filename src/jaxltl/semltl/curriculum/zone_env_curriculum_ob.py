@@ -177,7 +177,11 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
 def make_validation(
     env: Environment | EnvWrapper, load_path: Path | None = None
 ) -> Curriculum:
-    """Create fixed examples of every formula family in the main curriculum."""
+    """Create fixed obligation examples for fast end-to-end validation.
+
+    The final two stages exercise held-out conjunctions of existential
+    guarantees and universal safety obligations.
+    """
 
     propositions = list(env.propositions)
     required_propositions = 4
@@ -192,8 +196,8 @@ def make_validation(
         f"E((!{q}) U {p})",
         f"E((!{q}) U ({p} & ((!{r}) U {s})))",
         f"E(F({p} & N({q})))",
-        f"A({p} -> N({q}))",
-        f"E(!({q} | {r}) U ({p} | {s}))",
+        f"E(F({p})) & A(G(!{q}))",
+        f"E(F({p}) & F({q})) & A(G(!({r} | {s})))",
     ]
     stages = [
         RandomCurriculumStage(
