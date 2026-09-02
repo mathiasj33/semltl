@@ -28,9 +28,9 @@ class SemanticDWAWrapper[
 
     An accepting transition gives reward ``+1``, a transition into a rejecting
     bottom component gives ``-1``, and every other transition gives ``0``.
-    Accepting components are not terminal: remaining in one must keep producing
-    accepting transitions, as required by Büchi acceptance. Rejecting bottom
-    components terminate because acceptance is no longer possible.
+    Accepting and rejecting bottom components terminate early because the
+    Büchi result is irrevocably decided once either is entered. Other accepting
+    transitions remain non-terminal and can produce recurring rewards.
     """
 
     def __init__(
@@ -114,14 +114,20 @@ class SemanticDWAWrapper[
         is_accepting_sink = state.ldba.accepting_sink_states[next_dwa_state]
         is_rejecting_sink = state.ldba.rejecting_sink_states[next_dwa_state]
 
-        # Match SemanticLDBAWrapper: acceptance belongs to the HOA transition,
-        # not to finite-trace termination or merely to the target state's
-        # metadata. Acceptance takes priority on the transition that enters a
-        # rejecting component, just as it does in the original wrapper.
+        # FishSemML marks transitions according to their source state. Entering
+        # an accepting bottom component must nevertheless yield terminal
+        # success: all of its future transitions would be accepting. Conversely,
+        # entering a rejecting bottom component is terminal failure even if the
+        # source transition was accepting once; one accepting visit cannot
+        # satisfy a Büchi condition followed by permanent rejection.
         reward = jnp.where(
-            is_accepting_transition,
-            1.0,
-            jnp.where(is_rejecting_sink, -1.0, 0.0),
+            is_rejecting_sink,
+            -1.0,
+            jnp.where(
+                is_accepting_transition | is_accepting_sink,
+                1.0,
+                0.0,
+            ),
         )
 
         info = {
@@ -152,7 +158,9 @@ class SemanticDWAWrapper[
             state=new_state,
             observation=observation,
             reward=reward,
-            terminated=transition.terminated | is_rejecting_sink,
+            terminated=(
+                transition.terminated | is_accepting_sink | is_rejecting_sink
+            ),
             truncated=transition.truncated,
             terminal_observation=terminal_observation,
             propositions=transition.propositions,
