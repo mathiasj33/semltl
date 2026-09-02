@@ -1,4 +1,4 @@
-"""Finite-trace semantic DWA wrapper for FishSemML automata."""
+"""Semantic DWA wrapper for FishSemML Büchi automata."""
 
 from typing import Any, NamedTuple
 
@@ -20,19 +20,18 @@ class SemanticDWAWrapper[
     TEnvParams,
     TObsFeatures: NamedTuple,
 ](EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]):
-    """Use FishSemML state acceptance with finite-trace semantics.
+    """Run a FishSemML DWA using its Büchi transition acceptance.
 
     The observation and action shapes intentionally remain compatible with the
     existing SemLTL model. The epsilon part of an action is ignored and all
     epsilon masks are false because a DWA has no epsilon transitions.
 
-    Logical satisfaction is decided when the underlying finite trace ends. A
-    rejecting sink fails immediately. The exact result is exposed as
-    ``info["satisfied"]`` and must be used for evaluation instead of
-    interpreting a positive accumulated reward as success.
+    An accepting transition gives reward ``+1``, a transition into a rejecting
+    bottom component gives ``-1``, and every other transition gives ``0``.
+    Accepting components are not terminal: remaining in one must keep producing
+    accepting transitions, as required by Büchi acceptance. Rejecting bottom
+    components terminate because acceptance is no longer possible.
     """
-
-    buchi_rewards: bool
 
     def __init__(
         self,
@@ -40,10 +39,8 @@ class SemanticDWAWrapper[
             EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]
             | Environment[Any, TEnvParams, TObsFeatures, CurriculumResetOptions]
         ),
-        buchi_rewards: bool = False,
     ):
         super().__init__(env)
-        self.buchi_rewards = buchi_rewards
 
     def _observation(
         self,
@@ -86,6 +83,7 @@ class SemanticDWAWrapper[
             # have the same pytree keys, even before these values are meaningful.
             info={
                 "satisfied": jnp.asarray(False),
+                "dwa_accepting_transition": jnp.asarray(False),
                 "dwa_accepting": jnp.asarray(False),
                 "dwa_accepting_sink": jnp.asarray(False),
                 "dwa_rejecting_sink": jnp.asarray(False),
@@ -109,36 +107,29 @@ class SemanticDWAWrapper[
         transition = super().step(key, state, env_action, params)
 
         assignment = self._env.map_assignment_to_index(transition.propositions)
-        next_dwa_state = state.ldba.transitions[state.ldba_state, assignment]
+        next_dwa_state, is_accepting_transition = state.ldba.get_next_state(
+            state.ldba_state, assignment
+        )
         is_accepting_state = state.ldba.accepting_states[next_dwa_state]
         is_accepting_sink = state.ldba.accepting_sink_states[next_dwa_state]
         is_rejecting_sink = state.ldba.rejecting_sink_states[next_dwa_state]
 
-        trace_ended = transition.done
-        satisfied = is_accepting_sink | (
-            trace_ended & is_accepting_state & ~is_rejecting_sink
+        # Match SemanticLDBAWrapper: acceptance belongs to the HOA transition,
+        # not to finite-trace termination or merely to the target state's
+        # metadata. Acceptance takes priority on the transition that enters a
+        # rejecting component, just as it does in the original wrapper.
+        reward = jnp.where(
+            is_accepting_transition,
+            1.0,
+            jnp.where(is_rejecting_sink, -1.0, 0.0),
         )
-        # Match original SemLTL's training signal: an irrevocable rejection is
-        # penalized, but an unresolved formula at the time limit is neutral.
-        # Exact finite-trace success remains available through `satisfied`.
-        failed = is_rejecting_sink
-        finite_reward = jnp.where(
-            failed, -1.0, jnp.where(satisfied, 1.0, 0.0)
-        )
-        # Optional evaluation metric matching SemLTL's recurring Büchi-style
-        # signal: every transition into an accepting state contributes +1.
-        # Rejecting sinks remain negative, although the evaluator clips their
-        # reward when accumulating its non-negative acceptance value.
-        buchi_reward = jnp.where(
-            is_rejecting_sink,
-            -1.0,
-            jnp.where(is_accepting_state, 1.0, 0.0),
-        )
-        reward = jnp.where(self.buchi_rewards, buchi_reward, finite_reward)
 
         info = {
             **transition.info,
-            "satisfied": satisfied,
+            # This means that acceptance has become irrevocable, not that a
+            # finite episode ending in any accepting state has been accepted.
+            "satisfied": is_accepting_sink,
+            "dwa_accepting_transition": is_accepting_transition,
             "dwa_accepting": is_accepting_state,
             "dwa_accepting_sink": is_accepting_sink,
             "dwa_rejecting_sink": is_rejecting_sink,
@@ -161,9 +152,7 @@ class SemanticDWAWrapper[
             state=new_state,
             observation=observation,
             reward=reward,
-            terminated=(
-                transition.terminated | is_accepting_sink | is_rejecting_sink
-            ),
+            terminated=transition.terminated | is_rejecting_sink,
             truncated=transition.truncated,
             terminal_observation=terminal_observation,
             propositions=transition.propositions,

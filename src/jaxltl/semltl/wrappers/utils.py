@@ -28,11 +28,8 @@ def wrap_env(
 def wrap_dwa_env(
     env: Environment | EnvWrapper, cfg: DictConfig, training: bool
 ) -> EnvWrapper:
-    """Wrap an environment with finite-trace FishSemML DWA semantics."""
-    buchi_rewards = bool(
-        not training and cfg.get("eval", {}).get("buchi_rewards", False)
-    )
-    env = SemanticDWAWrapper(env, buchi_rewards=buchi_rewards)
+    """Wrap an environment with FishSemML DWA Büchi semantics."""
+    env = SemanticDWAWrapper(env)
     if training:
         precomputed_curriculum_path = (
             DATA_DIR / cfg.env.name / cfg.alg.name / "curriculum.eqx"

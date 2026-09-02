@@ -17,12 +17,12 @@ class JaxSemanticLDBA(JaxLDBA):
     transitions: jax.Array  # shape: (num_states, num_assignments) -> int32
     epsilon_transitions: jax.Array  # shape: (num_states, max_eps_transitions) -> int32
     embeddings: jax.Array  # shape: (num_states, embedding_dim) -> float32
-    # Finite-word state acceptance supplied by FishSemML. Original SemML
-    # automata do not provide this metadata and therefore remain all false.
+    # State acceptance metadata supplied by FishSemML. Büchi rewards still use
+    # the HOA transition acceptance table inherited as ``accepting``.
     accepting_states: jax.Array  # shape: (num_states,) -> bool
-    # Closed components in which every state has the same finite-word truth
-    # value. These are computed from FishSemML state metadata, independently
-    # of the HOA's Büchi transition annotations.
+    # Closed components in which every state has the same acceptance value.
+    # These are computed from FishSemML state metadata, independently of the
+    # HOA's Büchi transition annotations.
     accepting_sink_states: jax.Array  # shape: (num_states,) -> bool
     rejecting_sink_states: jax.Array  # shape: (num_states,) -> bool
 
@@ -153,7 +153,7 @@ class JaxSemanticLDBA(JaxLDBA):
         for i, ldba in tqdm(
             enumerate(ldbas), desc="Processing LDBAs", total=len(ldbas)
         ):
-            # Classify each closed SCC using FishSemML's finite-word state
+            # Classify each closed SCC using FishSemML's state
             # acceptance. A synthetic completion sink has no state metadata
             # and is therefore rejecting. Mixed-acceptance SCCs are neither
             # true nor false sinks because future letters can still matter.
