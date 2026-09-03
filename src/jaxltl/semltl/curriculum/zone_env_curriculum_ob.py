@@ -7,6 +7,7 @@ from jaxltl.environments.environment import Environment
 from jaxltl.environments.wrappers.wrapper import EnvWrapper
 from jaxltl.ltl2action.curriculum.curriculum import (
     Curriculum,
+    MultiRandomStage,
     RandomCurriculumStage,
     Sampler,
 )
@@ -87,83 +88,169 @@ class ObligationWeakNextSampler(Sampler[str]):
         return f"E(F({finite_formula}))"
 
 
+class SafetyGuaranteeObligationSampler(Sampler[str]):
+    """Sample conjunctions of existential guarantees and universal safety."""
+
+    def __init__(
+        self,
+        guarantees: int,
+        avoid: int,
+        propositions: list[str],
+    ):
+        if guarantees < 1 or avoid < 1:
+            raise ValueError("At least one guarantee and one avoidance are required.")
+        if guarantees + avoid > len(propositions):
+            raise ValueError("Not enough propositions for distinct task clauses.")
+        self.guarantees = guarantees
+        self.avoid = avoid
+        self.propositions = propositions
+
+    def sample(self) -> str:
+        selected = random.sample(
+            self.propositions, self.guarantees + self.avoid
+        )
+        guarantee_propositions = selected[: self.guarantees]
+        avoid_propositions = selected[self.guarantees :]
+
+        guarantee = " & ".join(
+            f"F({proposition})" for proposition in guarantee_propositions
+        )
+        if len(avoid_propositions) == 1:
+            safety = f"!{avoid_propositions[0]}"
+        else:
+            safety = f"!({' | '.join(avoid_propositions)})"
+        return f"E({guarantee}) & A(G({safety}))"
+
+
 def _as_range(value: int | tuple[int, int]) -> tuple[int, int]:
     return (value, value) if isinstance(value, int) else value
 
 
 def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curriculum:
-    """Create the Zones8 curriculum using only LTLf+ obligation formulas."""
+    """Create a cumulative Zones8 curriculum of LTLf+ obligations.
+
+    Each stage focuses on one new formula family while replaying samples from
+    earlier stages. This limits catastrophic forgetting as the curriculum
+    advances and makes the final stage representative of the complete task
+    distribution rather than only its most difficult family.
+    """
 
     propositions = list(env.propositions)
+
+    reach = ObligationReachAvoidSampler(
+        depth=1,
+        reach=1,
+        avoid=0,
+        propositions=propositions,
+    )
+    sequential_reach = ObligationReachAvoidSampler(
+        depth=2,
+        reach=1,
+        avoid=0,
+        propositions=propositions,
+    )
+    reach_avoid = ObligationReachAvoidSampler(
+        depth=1,
+        reach=1,
+        avoid=1,
+        propositions=propositions,
+        quantifier="E",
+    )
+    sequential_reach_avoid = ObligationReachAvoidSampler(
+        depth=2,
+        reach=1,
+        avoid=1,
+        propositions=propositions,
+    )
+    weak_next = ObligationWeakNextSampler(
+        depth=2,
+        propositions=propositions,
+        universal_probability=0.0,
+    )
+    safety_guarantee = SafetyGuaranteeObligationSampler(
+        guarantees=1,
+        avoid=1,
+        propositions=propositions,
+    )
+    multi_safety_guarantee = SafetyGuaranteeObligationSampler(
+        guarantees=2,
+        avoid=2,
+        propositions=propositions,
+    )
+
+    def random_stage(sampler: Sampler[str]) -> RandomCurriculumStage[str]:
+        """Wrap a sampler for use inside a mixed curriculum stage."""
+
+        return RandomCurriculumStage(sampler=sampler, threshold=None)
+
     return Curriculum(
         [
-            # 1. Simple existential reach tasks
-            RandomCurriculumStage(
-                sampler=ObligationReachAvoidSampler(
-                    depth=1,
-                    reach=1,
-                    avoid=0,
-                    propositions=propositions,
-                ),
-                threshold=0.9,
-            ),
-            # 2. Existential sequential reach tasks of depth 2
-            RandomCurriculumStage(
-                sampler=ObligationReachAvoidSampler(
-                    depth=2,
-                    reach=1,
-                    avoid=0,
-                    propositions=propositions,
-                ),
+            # 1. Establish simple existential reach tasks.
+            RandomCurriculumStage(sampler=reach, threshold=0.9),
+            # 2. Emphasize sequential reach while retaining simple reach.
+            MultiRandomStage(
+                stages=[random_stage(sequential_reach), random_stage(reach)],
+                probs=[0.80, 0.20],
                 threshold=0.95,
             ),
-            # 3. Simple existential reach-avoid tasks
-            RandomCurriculumStage(
-                sampler=ObligationReachAvoidSampler(
-                    depth=1,
-                    reach=1,
-                    avoid=1,
-                    propositions=propositions,
-                    quantifier="E",
-                ),
+            # 3. Add reach-avoid with balanced replay of both earlier families.
+            MultiRandomStage(
+                stages=[
+                    random_stage(reach_avoid),
+                    random_stage(sequential_reach),
+                    random_stage(reach),
+                ],
+                probs=[0.70, 0.15, 0.15],
                 threshold=0.95,
             ),
-            # 4. Existential reach-avoid tasks of depth 2
-            RandomCurriculumStage(
-                sampler=ObligationReachAvoidSampler(
-                    depth=2,
-                    reach=1,
-                    avoid=1,
-                    propositions=propositions,
-                ),
+            # 4. Add sequential reach-avoid and replay every prior family.
+            MultiRandomStage(
+                stages=[
+                    random_stage(sequential_reach_avoid),
+                    random_stage(reach_avoid),
+                    random_stage(sequential_reach),
+                    random_stage(reach),
+                ],
+                probs=[0.70, 0.10, 0.10, 0.10],
                 threshold=0.9,
             ),
-            # 5. Existential weak-next sequence obligations
-            RandomCurriculumStage(
-                sampler=ObligationWeakNextSampler(
-                    depth=2,
-                    propositions=propositions,
-                    universal_probability=0.0,
-                ),
+            # 5. Add weak-next sequences with 30% replay.
+            MultiRandomStage(
+                stages=[
+                    random_stage(weak_next),
+                    random_stage(sequential_reach_avoid),
+                    random_stage(reach_avoid),
+                    random_stage(sequential_reach),
+                    random_stage(reach),
+                ],
+                probs=[0.70, 0.075, 0.075, 0.075, 0.075],
                 threshold=0.9,
             ),
-            # 6. Universal weak-next response obligations
-            RandomCurriculumStage(
-                sampler=ObligationWeakNextSampler(
-                    depth=2,
-                    propositions=propositions,
-                    universal_probability=1.0,
-                ),
+            # 6. Add a safety-guarantee conjunction with 40% replay.
+            MultiRandomStage(
+                stages=[
+                    random_stage(safety_guarantee),
+                    random_stage(weak_next),
+                    random_stage(sequential_reach_avoid),
+                    random_stage(reach_avoid),
+                    random_stage(sequential_reach),
+                    random_stage(reach),
+                ],
+                probs=[0.60, 0.08, 0.08, 0.08, 0.08, 0.08],
                 threshold=0.9,
             ),
-            # 7. General existential reach and reach-avoid obligations
-            RandomCurriculumStage(
-                sampler=ObligationReachAvoidSampler(
-                    depth=(1, 2),
-                    reach=(1, 2),
-                    avoid=(0, 2),
-                    propositions=propositions,
-                ),
+            # 7. Train indefinitely on a broad mixture of all seven families.
+            MultiRandomStage(
+                stages=[
+                    random_stage(multi_safety_guarantee),
+                    random_stage(safety_guarantee),
+                    random_stage(weak_next),
+                    random_stage(sequential_reach_avoid),
+                    random_stage(reach_avoid),
+                    random_stage(sequential_reach),
+                    random_stage(reach),
+                ],
+                probs=[0.30, 0.15, 0.15, 0.15, 0.10, 0.10, 0.05],
                 threshold=None,
             ),
         ],
@@ -179,8 +266,8 @@ def make_validation(
 ) -> Curriculum:
     """Create fixed obligation examples for fast end-to-end validation.
 
-    The final two stages exercise held-out conjunctions of existential
-    guarantees and universal safety obligations.
+    The final two stages exercise conjunctions of existential guarantees and
+    universal safety obligations, ordered after the simpler task families.
     """
 
     propositions = list(env.propositions)

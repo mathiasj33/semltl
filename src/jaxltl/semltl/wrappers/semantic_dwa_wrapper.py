@@ -22,9 +22,9 @@ class SemanticDWAWrapper[
 ](EnvWrapper[TEnvParams, TObsFeatures, CurriculumResetOptions]):
     """Run a FishSemML DWA using its Büchi transition acceptance.
 
-    The observation and action shapes intentionally remain compatible with the
-    existing SemLTL model. The epsilon part of an action is ignored and all
-    epsilon masks are false because a DWA has no epsilon transitions.
+    The observation shape remains compatible with the existing SemLTL model,
+    but the DWA-specific actor emits only an environment action. All epsilon
+    masks are false because a DWA has no epsilon transitions.
 
     An accepting transition gives reward ``+1``, a transition into a rejecting
     bottom component gives ``-1``, and every other transition gives ``0``.
@@ -100,11 +100,10 @@ class SemanticDWAWrapper[
         self,
         key: jax.Array,
         state: SemanticLDBAWrapperState,
-        action: tuple[jax.Array, jax.Array],
+        action: jax.Array,
         params: TEnvParams,
     ) -> EnvTransition[SemanticLDBAWrapperState, TObsFeatures]:
-        env_action, _epsilon_action = action
-        transition = super().step(key, state, env_action, params)
+        transition = super().step(key, state, action, params)
 
         assignment = self._env.map_assignment_to_index(transition.propositions)
         next_dwa_state, is_accepting_transition = state.ldba.get_next_state(
