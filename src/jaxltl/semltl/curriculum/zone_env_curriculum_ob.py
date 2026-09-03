@@ -122,6 +122,58 @@ class SafetyGuaranteeObligationSampler(Sampler[str]):
         return f"E({guarantee}) & A(G({safety}))"
 
 
+class DisjunctiveReachAvoidSampler(Sampler[str]):
+    """Sample reach-avoid obligations with alternative goals and hazards."""
+
+    def __init__(self, propositions: list[str], nested_probability: float = 0.5):
+        if len(propositions) < 5:
+            raise ValueError("Disjunctive sampling requires five propositions.")
+        self.propositions = propositions
+        self.nested_probability = nested_probability
+
+    def sample(self) -> str:
+        goal_a, goal_b, avoid_a, avoid_b, final_goal = random.sample(
+            self.propositions, 5
+        )
+        alternatives = f"({goal_a} | {goal_b})"
+        avoid = f"!({avoid_a} | {avoid_b})"
+        if random.random() < self.nested_probability:
+            alternatives = f"({alternatives} & F({final_goal}))"
+        return f"E({avoid} U {alternatives})"
+
+
+class MultipleGuaranteeObligationSampler(Sampler[str]):
+    """Sample standalone conjunctions of existential guarantees."""
+
+    def __init__(self, propositions: list[str], disjunction_probability: float = 0.5):
+        if len(propositions) < 3:
+            raise ValueError("Multiple guarantees require three propositions.")
+        self.propositions = propositions
+        self.disjunction_probability = disjunction_probability
+
+    def sample(self) -> str:
+        p, q, r = random.sample(self.propositions, 3)
+        if random.random() < self.disjunction_probability:
+            return f"E(F({p} | {q}) & F({r}))"
+        return f"E(F({p}) & F({q}))"
+
+
+class PureSafetyObligationSampler(Sampler[str]):
+    """Sample universal safety obligations with one or two hazards."""
+
+    def __init__(self, propositions: list[str], multiple_probability: float = 0.5):
+        if len(propositions) < 2:
+            raise ValueError("Pure safety sampling requires two propositions.")
+        self.propositions = propositions
+        self.multiple_probability = multiple_probability
+
+    def sample(self) -> str:
+        p, q = random.sample(self.propositions, 2)
+        if random.random() < self.multiple_probability:
+            return f"A(G(!({p} | {q})))"
+        return f"A(G(!{p}))"
+
+
 def _as_range(value: int | tuple[int, int]) -> tuple[int, int]:
     return (value, value) if isinstance(value, int) else value
 
@@ -156,10 +208,13 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
         propositions=propositions,
         quantifier="E",
     )
-    sequential_reach_avoid = ObligationReachAvoidSampler(
+    nested_reach_avoid = ObligationReachAvoidSampler(
         depth=2,
         reach=1,
         avoid=1,
+        propositions=propositions,
+    )
+    disjunctive_reach_avoid = DisjunctiveReachAvoidSampler(
         propositions=propositions,
     )
     weak_next = ObligationWeakNextSampler(
@@ -167,6 +222,10 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
         propositions=propositions,
         universal_probability=0.0,
     )
+    multiple_guarantees = MultipleGuaranteeObligationSampler(
+        propositions=propositions,
+    )
+    pure_safety = PureSafetyObligationSampler(propositions=propositions)
     safety_guarantee = SafetyGuaranteeObligationSampler(
         guarantees=1,
         avoid=1,
@@ -177,7 +236,12 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
         avoid=2,
         propositions=propositions,
     )
-
+    broad_reach_avoid = ObligationReachAvoidSampler(
+        depth=(1, 2),
+        reach=(1, 2),
+        avoid=(0, 2),
+        propositions=propositions,
+    )
     def random_stage(sampler: Sampler[str]) -> RandomCurriculumStage[str]:
         """Wrap a sampler for use inside a mixed curriculum stage."""
 
@@ -187,70 +251,72 @@ def make(env: Environment | EnvWrapper, load_path: Path | None = None) -> Curric
         [
             # 1. Establish simple existential reach tasks.
             RandomCurriculumStage(sampler=reach, threshold=0.9),
-            # 2. Emphasize sequential reach while retaining simple reach.
+            # 2. Sequential reach with simple-reach rehearsal.
             MultiRandomStage(
                 stages=[random_stage(sequential_reach), random_stage(reach)],
-                probs=[0.80, 0.20],
-                threshold=0.95,
-            ),
-            # 3. Add reach-avoid with balanced replay of both earlier families.
-            MultiRandomStage(
-                stages=[
-                    random_stage(reach_avoid),
-                    random_stage(sequential_reach),
-                    random_stage(reach),
-                ],
-                probs=[0.70, 0.15, 0.15],
-                threshold=0.95,
-            ),
-            # 4. Add sequential reach-avoid and replay every prior family.
-            MultiRandomStage(
-                stages=[
-                    random_stage(sequential_reach_avoid),
-                    random_stage(reach_avoid),
-                    random_stage(sequential_reach),
-                    random_stage(reach),
-                ],
-                probs=[0.70, 0.10, 0.10, 0.10],
+                probs=[0.75, 0.25],
                 threshold=0.9,
             ),
-            # 5. Add weak-next sequences with 30% replay.
+            # 3. Reach-avoid with rehearsal of both earlier families.
             MultiRandomStage(
                 stages=[
+                    random_stage(reach_avoid),
+                    random_stage(sequential_reach),
+                    random_stage(reach),
+                ],
+                probs=[0.60, 0.20, 0.20],
+                threshold=0.9,
+            ),
+            # 4. Nested reach-avoid with rehearsal of every earlier family.
+            MultiRandomStage(
+                stages=[
+                    random_stage(nested_reach_avoid),
+                    random_stage(reach_avoid),
+                    random_stage(sequential_reach),
+                    random_stage(reach),
+                ],
+                probs=[0.55, 0.15, 0.15, 0.15],
+                threshold=0.85,
+            ),
+            # 5. Add Boolean/disjunctive objectives; weak next has low weight.
+            MultiRandomStage(
+                stages=[
+                    random_stage(disjunctive_reach_avoid),
                     random_stage(weak_next),
-                    random_stage(sequential_reach_avoid),
+                    random_stage(nested_reach_avoid),
                     random_stage(reach_avoid),
                     random_stage(sequential_reach),
                     random_stage(reach),
                 ],
-                probs=[0.70, 0.075, 0.075, 0.075, 0.075],
-                threshold=0.9,
+                probs=[0.45, 0.10, 0.15, 0.10, 0.10, 0.10],
+                threshold=0.82,
             ),
-            # 6. Add a safety-guarantee conjunction with 40% replay.
+            # 6. Add standalone multiple guarantees and pure safety.
             MultiRandomStage(
                 stages=[
+                    random_stage(multiple_guarantees),
+                    random_stage(pure_safety),
+                    random_stage(disjunctive_reach_avoid),
+                    random_stage(nested_reach_avoid),
+                    random_stage(reach_avoid),
+                    random_stage(sequential_reach),
+                    random_stage(reach),
+                    random_stage(weak_next),
+                ],
+                probs=[0.30, 0.25, 0.15, 0.10, 0.05, 0.05, 0.05, 0.05],
+                threshold=0.85,
+            ),
+            # 7. SemLTL-style broad final mix. The two safety-guarantee
+            # samplers together account for 25% and cover both single and
+            # multiple guarantee/avoidance clauses.
+            MultiRandomStage(
+                stages=[
+                    random_stage(broad_reach_avoid),
+                    random_stage(pure_safety),
                     random_stage(safety_guarantee),
-                    random_stage(weak_next),
-                    random_stage(sequential_reach_avoid),
-                    random_stage(reach_avoid),
-                    random_stage(sequential_reach),
-                    random_stage(reach),
-                ],
-                probs=[0.60, 0.08, 0.08, 0.08, 0.08, 0.08],
-                threshold=0.9,
-            ),
-            # 7. Train indefinitely on a broad mixture of all seven families.
-            MultiRandomStage(
-                stages=[
                     random_stage(multi_safety_guarantee),
-                    random_stage(safety_guarantee),
-                    random_stage(weak_next),
-                    random_stage(sequential_reach_avoid),
-                    random_stage(reach_avoid),
-                    random_stage(sequential_reach),
-                    random_stage(reach),
                 ],
-                probs=[0.30, 0.15, 0.15, 0.15, 0.10, 0.10, 0.05],
+                probs=[0.50, 0.25, 0.125, 0.125],
                 threshold=None,
             ),
         ],
